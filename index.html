@@ -76,7 +76,7 @@
                     </div>
                     <div class="h-8 w-px bg-slate-600"></div>
                     <div class="text-center">
-                        <div class="text-xs text-slate-400 uppercase tracking-wider">Points (GP)</div>
+                        <div class="text-xs text-slate-400 uppercase tracking-wider">Wallet (€)</div>
                         <div class="text-2xl font-bold text-green-400" id="pointsDisplay">0</div>
                     </div>
                     <div class="h-8 w-px bg-slate-600"></div>
@@ -128,7 +128,7 @@
                     <h3 class="text-sm font-semibold text-slate-300 mb-2">Quick Add</h3>
                     <div class="flex gap-2">
                         <input type="text" id="customTaskInput" placeholder="Custom task..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-blue-500 focus:border-blue-500">
-                        <input type="number" id="customTaskPoints" placeholder="Pts" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-20 p-2.5 focus:ring-blue-500 focus:border-blue-500">
+                        <input type="number" id="customTaskPoints" placeholder="€ Value" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-20 p-2.5 focus:ring-blue-500 focus:border-blue-500">
                         <button onclick="addCustomTask()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg btn-press">
                             <i class="fas fa-plus"></i>
                         </button>
@@ -165,7 +165,7 @@
                     <h3 class="text-sm font-semibold text-slate-300 mb-2">Add New Reward</h3>
                     <div class="flex gap-2">
                         <input type="text" id="newRewardName" placeholder="Reward name..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-green-500 focus:border-green-500">
-                        <input type="number" id="newRewardCost" placeholder="Cost" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-20 p-2.5 focus:ring-green-500 focus:border-green-500">
+                        <input type="number" id="newRewardCost" placeholder="Cost €" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-20 p-2.5 focus:ring-green-500 focus:border-green-500">
                         <button onclick="addNewReward()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg btn-press">
                             <i class="fas fa-plus"></i>
                         </button>
@@ -181,7 +181,7 @@
                 <div class="grid grid-cols-2 gap-4 text-center">
                     <div class="bg-slate-800/50 p-3 rounded-lg">
                         <div class="text-2xl font-bold text-white" id="totalEarnedDisplay">0</div>
-                        <div class="text-xs text-slate-400 uppercase">Lifetime Points</div>
+                        <div class="text-xs text-slate-400 uppercase">Lifetime Earnings (€)</div>
                     </div>
                     <div class="bg-slate-800/50 p-3 rounded-lg">
                         <div class="text-2xl font-bold text-white" id="tasksCompletedDisplay">0</div>
@@ -226,12 +226,13 @@
             { id: 'research', name: 'Research Company/Role', points: 10, icon: 'fa-search', color: 'text-slate-400' }
         ];
 
+        // UPDATED REWARDS LIST (EURO EDITION)
         const DEFAULT_REWARDS = [
-            { id: 'coffee', name: 'Fancy Coffee', cost: 50, icon: 'fa-coffee' },
-            { id: 'netflix', name: '1 Hour Netflix', cost: 100, icon: 'fa-tv' },
-            { id: 'dinner', name: 'Order Dinner', cost: 300, icon: 'fa-utensils' },
-            { id: 'gadget', name: 'Tech Gadget', cost: 1000, icon: 'fa-gamepad' },
-            { id: 'trip', name: 'Weekend Trip', cost: 5000, icon: 'fa-plane' }
+            { id: 'spend_50', name: 'Spend €50', cost: 50, icon: 'fa-wallet' },
+            { id: 'spend_100', name: 'Spend €100', cost: 100, icon: 'fa-tag' },
+            { id: 'spend_300', name: 'Spend €300', cost: 300, icon: 'fa-shopping-bag' },
+            { id: 'spend_1000', name: 'Spend €1,000', cost: 1000, icon: 'fa-mobile-alt' },
+            { id: 'spend_5000', name: 'Spend €5,000', cost: 5000, icon: 'fa-plane' }
         ];
 
         const QUOTES = [
@@ -263,8 +264,6 @@
             if (saved) {
                 state = JSON.parse(saved);
             }
-            // Merge default rewards with custom ones if needed, or just use a unified list
-            // For simplicity, we'll just use defaults + state.customRewards logic below
         }
 
         function saveState() {
@@ -277,8 +276,8 @@
             state.currentPoints += amount;
             state.lifetimePoints += amount;
             state.tasksCompleted += 1;
-            addToHistory(`Completed: ${reason}`, `+${amount}`, 'text-green-400');
-            showToast(`+${amount} Points: ${reason}`);
+            addToHistory(`Completed: ${reason}`, `+€${amount}`, 'text-green-400');
+            showToast(`+€${amount} Earned: ${reason}`);
             showFloatText(amount);
             saveState();
         }
@@ -286,11 +285,11 @@
         function redeemPoints(cost, rewardName) {
             if (state.currentPoints >= cost) {
                 state.currentPoints -= cost;
-                addToHistory(`Redeemed: ${rewardName}`, `-${cost}`, 'text-red-400');
-                showToast(`Enjoy your ${rewardName}!`);
+                addToHistory(`Redeemed: ${rewardName}`, `-€${cost}`, 'text-red-400');
+                showToast(`You spent €${cost}!`);
                 saveState();
             } else {
-                showToast("Not enough points!", true);
+                showToast("Not enough funds in wallet!", true);
             }
         }
 
@@ -311,9 +310,6 @@
         }
 
         function getLevelInfo(points) {
-            // Simple level formula: Level = sqrt(points/10) roughly, or linear steps.
-            // Let's do linear steps of 100 for early levels, then scaling.
-            // Actually, let's just use a standard formula: Level N requires 100 * N total points
             let level = 1;
             let reqForNext = 100;
             let prevReq = 0;
@@ -321,7 +317,7 @@
             while (points >= reqForNext) {
                 level++;
                 prevReq = reqForNext;
-                reqForNext = reqForNext + (level * 50); // Increasing difficulty
+                reqForNext = reqForNext + (level * 50); 
             }
             
             return {
@@ -360,7 +356,7 @@
                         </div>
                         <span class="font-medium text-slate-200">${task.name}</span>
                     </div>
-                    <span class="font-bold text-green-400 text-sm">+${task.points}</span>
+                    <span class="font-bold text-green-400 text-sm">+€${task.points}</span>
                 `;
                 taskContainer.appendChild(div);
             });
@@ -384,7 +380,7 @@
                         </div>
                         <span class="font-medium text-slate-200">${reward.name}</span>
                     </div>
-                    <span class="font-bold ${canAfford ? 'text-red-400' : 'text-slate-500'} text-sm">-${reward.cost}</span>
+                    <span class="font-bold ${canAfford ? 'text-red-400' : 'text-slate-500'} text-sm">-€${reward.cost}</span>
                 `;
                 rewardContainer.appendChild(div);
             });
@@ -454,7 +450,7 @@
 
         function showFloatText(amount) {
             const el = document.createElement('div');
-            el.textContent = `+${amount}`;
+            el.textContent = `+€${amount}`;
             el.className = 'float-points text-2xl font-bold';
             // Random position near center
             const x = window.innerWidth / 2 + (Math.random() * 100 - 50);
