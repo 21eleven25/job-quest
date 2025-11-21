@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Hunt Quest: The CRO Journey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+        }
+        
+        .retro-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .card-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+
+        .btn-press:active {
+            transform: translateY(2px);
+        }
+
+        .task-checkbox:checked + div {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        /* Animation for point gain */
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-20px); opacity: 0; }
+        }
+        .float-points {
+            position: fixed;
+            color: #4ade80;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 50;
+        }
+
+        .xp-bar-glow {
+            box-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Header / Stats -->
+    <div class="bg-slate-900 border-b border-slate-700 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-4xl mx-auto p-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-yellow-400 retro-font tracking-wider">JOB QUEST</h1>
+                    <p class="text-sm text-slate-400 mt-1">Target: Chief Risk Officer</p>
+                </div>
+                
+                <div class="flex items-center gap-6 bg-slate-800 p-3 rounded-lg border border-slate-700 w-full md:w-auto justify-between md:justify-start">
+                    <div class="text-center">
+                        <div class="text-xs text-slate-400 uppercase tracking-wider">Level</div>
+                        <div class="text-2xl font-bold text-blue-400" id="levelDisplay">1</div>
+                    </div>
+                    <div class="h-8 w-px bg-slate-600"></div>
+                    <div class="text-center">
+                        <div class="text-xs text-slate-400 uppercase tracking-wider">Points (GP)</div>
+                        <div class="text-2xl font-bold text-green-400" id="pointsDisplay">0</div>
+                    </div>
+                    <div class="h-8 w-px bg-slate-600"></div>
+                    <div class="text-center">
+                        <div class="text-xs text-slate-400 uppercase tracking-wider">Rank</div>
+                        <div class="text-sm font-bold text-purple-400 whitespace-nowrap" id="rankDisplay">Novice Networker</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- XP Bar -->
+            <div class="mt-4 relative pt-1">
+                <div class="flex mb-2 items-center justify-between">
+                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                        Progress to Next Level
+                    </span>
+                    <div class="text-right">
+                        <span class="text-xs font-semibold inline-block text-blue-200" id="xpText">
+                            0 / 100 XP
+                        </span>
+                    </div>
+                </div>
+                <div class="overflow-hidden h-3 mb-4 text-xs flex rounded bg-slate-700">
+                    <div id="xpBar" style="width: 0%" class="progress-bar shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 xp-bar-glow"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto p-4 grid md:grid-cols-2 gap-6 mt-6">
+        
+        <!-- ACTION ZONE -->
+        <div class="flex flex-col gap-6">
+            
+            <!-- Daily Tasks -->
+            <div class="card-glass rounded-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-bolt text-yellow-400"></i> Actions
+                    </h2>
+                    <button onclick="resetDailies()" class="text-xs text-slate-400 hover:text-white underline">Reset Checks</button>
+                </div>
+
+                <div class="space-y-3" id="taskList">
+                    <!-- Tasks injected by JS -->
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-700">
+                    <h3 class="text-sm font-semibold text-slate-300 mb-2">Quick Add</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="customTaskInput" placeholder="Custom task..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-blue-500 focus:border-blue-500">
+                        <input type="number" id="customTaskPoints" placeholder="Pts" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-20 p-2.5 focus:ring-blue-500 focus:border-blue-500">
+                        <button onclick="addCustomTask()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg btn-press">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quest Log (History) -->
+            <div class="card-glass rounded-xl p-6 h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-scroll text-amber-600"></i> Quest Log
+                </h2>
+                <ul id="historyList" class="space-y-2 text-sm text-slate-300">
+                    <li class="italic text-slate-500">No actions taken yet. Adventure awaits!</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- REWARD ZONE -->
+        <div class="flex flex-col gap-6">
+            
+            <!-- Rewards Shop -->
+            <div class="card-glass rounded-xl p-6 border-yellow-500/20">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-shopping-cart text-green-400"></i> Reward Shop
+                </h2>
+                
+                <div class="grid gap-3" id="rewardList">
+                    <!-- Rewards injected by JS -->
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-700">
+                    <h3 class="text-sm font-semibold text-slate-300 mb-2">Add New Reward</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="newRewardName" placeholder="Reward name..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 focus:ring-green-500 focus:border-green-500">
+                        <input type="number" id="newRewardCost" placeholder="Cost" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-20 p-2.5 focus:ring-green-500 focus:border-green-500">
+                        <button onclick="addNewReward()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg btn-press">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats/Analytics -->
+            <div class="card-glass rounded-xl p-6">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-chart-line text-purple-400"></i> Analytics
+                </h2>
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div class="bg-slate-800/50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-white" id="totalEarnedDisplay">0</div>
+                        <div class="text-xs text-slate-400 uppercase">Lifetime Points</div>
+                    </div>
+                    <div class="bg-slate-800/50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-white" id="tasksCompletedDisplay">0</div>
+                        <div class="text-xs text-slate-400 uppercase">Tasks Done</div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-slate-500 italic" id="quoteDisplay">"The journey of a thousand miles begins with a single connection request."</p>
+                </div>
+            </div>
+
+            <button onclick="clearData()" class="text-xs text-red-500 hover:text-red-400 underline mt-4 self-end">Reset All Data</button>
+
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMsg">Action Completed!</span>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const RANKS = [
+            { min: 0, title: "Novice Networker" },
+            { min: 100, title: "LinkedIn Lurker" },
+            { min: 300, title: "Active Applicant" },
+            { min: 600, title: "Strategic Hunter" },
+            { min: 1000, title: "Interview Ace" },
+            { min: 2000, title: "Chief Risk Officer" },
+            { min: 5000, title: "Industry Legend" }
+        ];
+
+        const DEFAULT_TASKS = [
+            { id: 'linkedin_connect', name: 'Send Connection Request', points: 5, icon: 'fa-user-plus', color: 'text-blue-400' },
+            { id: 'linkedin_msg', name: 'Send Personalized Message', points: 10, icon: 'fa-envelope', color: 'text-blue-300' },
+            { id: 'apply_job', name: 'Submit Application', points: 20, icon: 'fa-paper-plane', color: 'text-green-400' },
+            { id: 'follow_up', name: 'Send Follow-up Email', points: 15, icon: 'fa-reply', color: 'text-purple-400' },
+            { id: 'networking_call', name: 'Networking Call (15m)', points: 50, icon: 'fa-phone', color: 'text-yellow-400' },
+            { id: 'interview', name: 'Interview Completed', points: 100, icon: 'fa-briefcase', color: 'text-red-400' },
+            { id: 'research', name: 'Research Company/Role', points: 10, icon: 'fa-search', color: 'text-slate-400' }
+        ];
+
+        const DEFAULT_REWARDS = [
+            { id: 'coffee', name: 'Fancy Coffee', cost: 50, icon: 'fa-coffee' },
+            { id: 'netflix', name: '1 Hour Netflix', cost: 100, icon: 'fa-tv' },
+            { id: 'dinner', name: 'Order Dinner', cost: 300, icon: 'fa-utensils' },
+            { id: 'gadget', name: 'Tech Gadget', cost: 1000, icon: 'fa-gamepad' },
+            { id: 'trip', name: 'Weekend Trip', cost: 5000, icon: 'fa-plane' }
+        ];
+
+        const QUOTES = [
+            "Luck is what happens when preparation meets opportunity.",
+            "Every 'No' brings you closer to a 'Yes'.",
+            "Your network is your net worth.",
+            "Small habits make big differences.",
+            "Keep pushing. The breakthrough is coming."
+        ];
+
+        // --- STATE MANAGEMENT ---
+        let state = {
+            currentPoints: 0,
+            lifetimePoints: 0,
+            tasksCompleted: 0,
+            history: [],
+            customRewards: []
+        };
+
+        // --- INITIALIZATION ---
+        function init() {
+            loadState();
+            renderUI();
+            document.getElementById('quoteDisplay').textContent = `"${QUOTES[Math.floor(Math.random() * QUOTES.length)]}"`;
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('jobQuestState');
+            if (saved) {
+                state = JSON.parse(saved);
+            }
+            // Merge default rewards with custom ones if needed, or just use a unified list
+            // For simplicity, we'll just use defaults + state.customRewards logic below
+        }
+
+        function saveState() {
+            localStorage.setItem('jobQuestState', JSON.stringify(state));
+            renderUI();
+        }
+
+        // --- CORE LOGIC ---
+        function earnPoints(amount, reason) {
+            state.currentPoints += amount;
+            state.lifetimePoints += amount;
+            state.tasksCompleted += 1;
+            addToHistory(`Completed: ${reason}`, `+${amount}`, 'text-green-400');
+            showToast(`+${amount} Points: ${reason}`);
+            showFloatText(amount);
+            saveState();
+        }
+
+        function redeemPoints(cost, rewardName) {
+            if (state.currentPoints >= cost) {
+                state.currentPoints -= cost;
+                addToHistory(`Redeemed: ${rewardName}`, `-${cost}`, 'text-red-400');
+                showToast(`Enjoy your ${rewardName}!`);
+                saveState();
+            } else {
+                showToast("Not enough points!", true);
+            }
+        }
+
+        function addToHistory(action, value, colorClass) {
+            const entry = { action, value, colorClass, time: new Date().toLocaleTimeString() };
+            state.history.unshift(entry);
+            if (state.history.length > 50) state.history.pop(); // Keep log manageable
+        }
+
+        function getRank(points) {
+            let rank = RANKS[0].title;
+            for (let i = 0; i < RANKS.length; i++) {
+                if (points >= RANKS[i].min) {
+                    rank = RANKS[i].title;
+                }
+            }
+            return rank;
+        }
+
+        function getLevelInfo(points) {
+            // Simple level formula: Level = sqrt(points/10) roughly, or linear steps.
+            // Let's do linear steps of 100 for early levels, then scaling.
+            // Actually, let's just use a standard formula: Level N requires 100 * N total points
+            let level = 1;
+            let reqForNext = 100;
+            let prevReq = 0;
+            
+            while (points >= reqForNext) {
+                level++;
+                prevReq = reqForNext;
+                reqForNext = reqForNext + (level * 50); // Increasing difficulty
+            }
+            
+            return {
+                level: level,
+                current: points - prevReq,
+                max: reqForNext - prevReq,
+                percent: Math.min(100, ((points - prevReq) / (reqForNext - prevReq)) * 100)
+            };
+        }
+
+        // --- RENDERING ---
+        function renderUI() {
+            // Stats
+            document.getElementById('pointsDisplay').textContent = state.currentPoints;
+            document.getElementById('totalEarnedDisplay').textContent = state.lifetimePoints;
+            document.getElementById('tasksCompletedDisplay').textContent = state.tasksCompleted;
+            document.getElementById('rankDisplay').textContent = getRank(state.lifetimePoints);
+
+            // XP Bar
+            const lvlInfo = getLevelInfo(state.lifetimePoints);
+            document.getElementById('levelDisplay').textContent = lvlInfo.level;
+            document.getElementById('xpText').textContent = `${Math.floor(lvlInfo.current)} / ${Math.floor(lvlInfo.max)} XP`;
+            document.getElementById('xpBar').style.width = `${lvlInfo.percent}%`;
+
+            // Task List
+            const taskContainer = document.getElementById('taskList');
+            taskContainer.innerHTML = '';
+            DEFAULT_TASKS.forEach(task => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-slate-800/50 p-3 rounded-lg border border-slate-700 hover:bg-slate-700 transition cursor-pointer btn-press';
+                div.onclick = () => earnPoints(task.points, task.name);
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-600">
+                            <i class="fas ${task.icon} ${task.color}"></i>
+                        </div>
+                        <span class="font-medium text-slate-200">${task.name}</span>
+                    </div>
+                    <span class="font-bold text-green-400 text-sm">+${task.points}</span>
+                `;
+                taskContainer.appendChild(div);
+            });
+
+            // Reward List
+            const rewardContainer = document.getElementById('rewardList');
+            rewardContainer.innerHTML = '';
+            const allRewards = [...DEFAULT_REWARDS, ...state.customRewards];
+            
+            allRewards.forEach(reward => {
+                const canAfford = state.currentPoints >= reward.cost;
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between p-3 rounded-lg border transition ${canAfford ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 cursor-pointer btn-press' : 'bg-slate-900/50 border-slate-800 opacity-50 cursor-not-allowed'}`;
+                if (canAfford) {
+                    div.onclick = () => redeemPoints(reward.cost, reward.name);
+                }
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-600">
+                            <i class="fas ${reward.icon || 'fa-gift'} text-yellow-500"></i>
+                        </div>
+                        <span class="font-medium text-slate-200">${reward.name}</span>
+                    </div>
+                    <span class="font-bold ${canAfford ? 'text-red-400' : 'text-slate-500'} text-sm">-${reward.cost}</span>
+                `;
+                rewardContainer.appendChild(div);
+            });
+
+            // History List
+            const histContainer = document.getElementById('historyList');
+            if (state.history.length === 0) {
+                histContainer.innerHTML = '<li class="italic text-slate-500 text-center py-4">No actions taken yet.</li>';
+            } else {
+                histContainer.innerHTML = '';
+                state.history.forEach(entry => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between border-b border-slate-700/50 pb-1 mb-1 last:border-0';
+                    li.innerHTML = `
+                        <span>${entry.action}</span>
+                        <span class="${entry.colorClass} font-mono">${entry.value}</span>
+                    `;
+                    histContainer.appendChild(li);
+                });
+            }
+        }
+
+        // --- UTILS ---
+        function addCustomTask() {
+            const name = document.getElementById('customTaskInput').value;
+            const points = parseInt(document.getElementById('customTaskPoints').value);
+            if (name && points) {
+                earnPoints(points, name);
+                document.getElementById('customTaskInput').value = '';
+                document.getElementById('customTaskPoints').value = '';
+            }
+        }
+
+        function addNewReward() {
+            const name = document.getElementById('newRewardName').value;
+            const cost = parseInt(document.getElementById('newRewardCost').value);
+            if (name && cost) {
+                state.customRewards.push({ id: Date.now(), name, cost, icon: 'fa-star' });
+                saveState();
+                document.getElementById('newRewardName').value = '';
+                document.getElementById('newRewardCost').value = '';
+            }
+        }
+
+        function resetDailies() {
+            // Visual reset only since we track stream logic not checkboxes
+            showToast("Daily focus reset!");
+        }
+
+        function clearData() {
+            if (confirm("Are you sure? This wipes all progress.")) {
+                localStorage.removeItem('jobQuestState');
+                location.reload();
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgSpan = document.getElementById('toastMsg');
+            msgSpan.textContent = msg;
+            toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-xl transform transition-all duration-300 flex items-center gap-3 z-50 ${isError ? 'bg-red-600' : 'bg-blue-600'} text-white translate-y-0 opacity-100`;
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function showFloatText(amount) {
+            const el = document.createElement('div');
+            el.textContent = `+${amount}`;
+            el.className = 'float-points text-2xl font-bold';
+            // Random position near center
+            const x = window.innerWidth / 2 + (Math.random() * 100 - 50);
+            const y = window.innerHeight / 2 + (Math.random() * 100 - 50);
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // Run
+        init();
+
+    </script>
+</body>
+</html>
